@@ -1,12 +1,9 @@
 import React from "react";
-import { Button, DatePicker } from "antd";
+import RussiaBlock from "./russia";
 
 function App(): JSX.Element {
     return (
-        <div>
-            <Button type="primary">Hello World</Button>
-            <DatePicker />
-        </div>
+        <RussiaBlock canvasSizeW={600} />
     );
 }
 
