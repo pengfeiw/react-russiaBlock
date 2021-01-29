@@ -26,6 +26,13 @@ class Shape {
         return shape[this.type][this.shapeIndex];
     }
 
+    /**
+     * 绘制当前图形
+     * @param ctx CanvasRenderingContext2D对象
+     * @param ltx block当前的左上角坐标X
+     * @param lty block当前的左上角坐标Y
+     * @param cellW 一格cell的宽度
+     */
     public draw(ctx: CanvasRenderingContext2D, ltx: number, lty: number, cellW: number): void {
         ctx.strokeStyle = this.borderColor;
         ctx.fillStyle = this.color;
@@ -39,6 +46,26 @@ class Shape {
                 ctx.strokeRect(ltx + col * cellW, lty + row * cellW, cellW, cellW);
                 ctx.fillRect(ltx + col * cellW, lty + row * cellW, cellW, cellW);
                 ctx.closePath();
+            }
+            value = value << 1;
+        }
+    }
+
+    /**
+     * 清除当前图形
+     * @param ctx CanvasRenderingContext2D对象
+     * @param ltx block当前的左上角坐标X
+     * @param lty block当前的左上角坐标Y
+     * @param cellW 一格cell的宽度
+     */
+    public clear(ctx: CanvasRenderingContext2D, ltx: number, lty: number, cellW: number): void {
+        let value = this.shapeValue;
+        for (let i = 0; i < 16; i++) {
+            const andOpRes = value & 0x8000;
+            if (andOpRes === 0x8000) {
+                const row = parseInt((i / 4).toString());
+                const col = i % 4;
+                ctx.clearRect(ltx + col * cellW - 1, lty + row * cellW - 1, cellW + 2, cellW + 2);
             }
             value = value << 1;
         }

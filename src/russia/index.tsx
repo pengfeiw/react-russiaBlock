@@ -1,10 +1,12 @@
-import React, {FC, useEffect, useMemo, useRef, useState} from "react";
+import React, {FC, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import "./index.less";
-import Shape, {ShapeType} from "./shape";
+import Shape, {shapeL, ShapeType} from "./shape";
 
 interface RussiaBlockProps {
     canvasSizeW: number; // 画布宽度，高度自动计算
 }
+
+
 
 const RussiaBlock: FC<RussiaBlockProps> = (props) => {
     const {canvasSizeW: sizew} = props; // 水平宽度(px)
@@ -15,6 +17,9 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
     const [curShape, setCurShape] = useState<Shape>(); // 当前block
     const [shapeLtX, setShapeLtX] = useState<number>(18); // 当前block的位置X
     const [shapeLtY, setShapeLtY] = useState<number>(-4); // 当前block的位置Y
+    const [speed, setSpeed] = useState<number>(1000); // 表示多长时间（ms）下落一格
+    const [suspend, setSuspend] = useState<boolean>(false); // 暂停
+
     const cellSize = useMemo(() => {
         return sizew / cellCountW;
     }, [sizew, cellCountW]);
@@ -27,7 +32,26 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
             const lty = shapeLtY * cellSize;
             curShape?.draw(ctx, ltx , lty, cellSize);
         }
-    }, [shapeLtX, shapeLtY, curShape]);
+    }, [curShape, shapeLtX, shapeLtY]);
+
+    useEffect(() => {
+        const shapeBlock = new Shape("shapeI");
+        setCurShape(shapeBlock);
+    }, []);
+
+    // 控制下落
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+            if (!suspend) {
+                setShapeLtY(shapeLtY + 1);
+                const ctx = canvasRef.current?.getContext("2d");
+                const ltx = shapeLtX * cellSize;
+                const lty = shapeLtY * cellSize;
+                curShape?.clear(ctx!, ltx, lty, cellSize);
+            }
+        }, speed);
+        return () => clearInterval(intervalId);
+    }, [shapeLtY, shapeLtX, cellSize, curShape]);
 
     // 绘制已固定的block
     useEffect(() => {
@@ -36,7 +60,14 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
             ctx.clearRect(0, 0, canvasRef.current!.clientWidth, canvasRef.current!.clientHeight);
             for (let i = 0 ; i < cellStatus.length; i++) {
                 for (let j = 0; j < cellStatus.length; j++) {
-
+                    if (cellStatus[i][j] === 1) {
+                        const ltx = j * cellSize;
+                        const lty = i * cellSize;
+                        ctx.strokeStyle = "#2c2c2c";
+                        ctx.fillStyle = "black";
+                        ctx.strokeRect(ltx, lty, cellSize, cellSize);
+                        ctx.fillRect(ltx, lty, cellSize, cellSize);
+                    }
                 }
             }
         }
@@ -54,6 +85,7 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
         setCellStatus(status);
     }, []);
 
+    // 设置canvas尺寸
     useEffect(() => {
         const canvas = canvasRef.current;
         if (canvas) {
@@ -67,6 +99,7 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
 
     // test: 绘制所有图形
     useEffect(() => {
+        return;
         const cellSize = sizew * 1 / cellCountW;
         const canvas = canvasRef.current;
         const ctx = canvas?.getContext("2d");
@@ -81,8 +114,42 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
             }
         }
     }, []);
-
-
+    
+    useEffect(() => {
+        const onKeyPress = (event: KeyboardEvent): void => {
+            const ctx = canvasRef.current?.getContext("2d");
+            const ltx = shapeLtX * cellSize;
+            const lty = shapeLtY * cellSize;
+            switch (event.key) {
+                case "ArrowLeft":
+                    setShapeLtX(shapeLtX - 1);
+                    curShape?.clear(ctx!, ltx, lty, cellSize);
+                    break;
+                case "ArrowRight":
+                    setShapeLtX(shapeLtX + 1);
+                    curShape?.clear(ctx!, ltx, lty, cellSize);
+                    break;
+                case "ArrowDown":
+                    setSuspend(false);
+                    setShapeLtY(shapeLtY + 1);
+                    curShape?.clear(ctx!, ltx, lty, cellSize);
+                    break;
+                case "ArrowUp":
+                    const newShape = new Shape(curShape!.type,  curShape!.color, curShape!.borderColor);
+                    newShape.shapeIndex = (curShape!.shapeIndex + 1) % 4;
+                    setCurShape(newShape);
+                    curShape?.clear(ctx!, ltx, lty, cellSize);
+                    break;
+                case " ":
+                    setSuspend(!suspend);
+                    break;
+                default:
+                    break;
+            }
+        };
+        window.addEventListener("keydown", onKeyPress);
+        return () => window.removeEventListener("keydown", onKeyPress);
+    }, [canvasRef.current, shapeLtX, shapeLtY, cellSize, suspend, curShape]);
 
     return (
         <div className="russia">
