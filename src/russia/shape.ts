@@ -9,9 +9,7 @@ export const shapeT = [0x04E0, 0x4640, 0x0720, 0x2620];
 export const allShape = [shapeO, shapeI, shapeZ, shapeS, shapeL, shapeJ, shapeT];
 
 const shape = {shapeO, shapeI, shapeZ, shapeS, shapeL, shapeJ, shapeT};
-
 export type ShapeType = keyof typeof shape;
-
 class Shape {
     public type: ShapeType;
     public shapeIndex = 0;

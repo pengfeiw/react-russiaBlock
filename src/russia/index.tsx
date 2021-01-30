@@ -6,7 +6,10 @@ interface RussiaBlockProps {
     canvasSizeW: number; // 画布宽度，高度自动计算
 }
 
-
+// 检测两块区域是否冲突，用于碰撞检测
+const isConflict = (blockValue1: number, blockValue2: number): boolean => {
+    return (blockValue1 & blockValue2) !== 0;
+};
 
 const RussiaBlock: FC<RussiaBlockProps> = (props) => {
     const {canvasSizeW: sizew} = props; // 水平宽度(px)
@@ -24,41 +27,80 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
         return sizew / cellCountW;
     }, [sizew, cellCountW]);
 
-    // 绘制shape
-    useEffect(() => {
-        const ctx = canvasRef.current?.getContext("2d");
-        if (ctx) {
-            const ltx = shapeLtX * cellSize;
-            const lty = shapeLtY * cellSize;
-            curShape?.draw(ctx, ltx , lty, cellSize);
+    // 获取一个blockValue
+    const getBlockValueByLt = (ltX: number, ltY: number) => {
+        if (ltX < -3 || ltX > cellCountW - 1 || ltY < -3 || ltY > cellCountH - 1) {
+            return 0xFFFF;
         }
-    }, [curShape, shapeLtX, shapeLtY]);
+        let binaryStr = "";
+        for (let i = ltY; i < ltY + 4; i++) {
+            for (let j = ltX; j < ltX + 4; j++) {
+                if (i >= 0 && i < cellStatus.length && j >= 0 && j < cellStatus[i].length) {
+                    binaryStr += cellStatus[i][j];
+                } else if (i < 0) {
+                    binaryStr += "0";
+                }
+                else {
+                    binaryStr += "1";
+                }
+            }
+        }
+        return parseInt(binaryStr, 2);
+    };
+
+    // const updateCellStatusByShapeBlock = () => {
+
+    // };
 
     useEffect(() => {
         const shapeBlock = new Shape("shapeI");
         setCurShape(shapeBlock);
     }, []);
 
+    // 检测下落冲突，更新cellStatus
+    useEffect(() => {
+        if (curShape) {
+            const blockValue = getBlockValueByLt(shapeLtX, shapeLtY);
+            const conflict = isConflict(blockValue, curShape!.shapeValue);
+            if (conflict) {
+                setShapeLtY(shapeLtY - 1);
+                // 更新cellStatus
+
+            }
+        }
+    }, [shapeLtY]);
+
+    // 绘制shape
+    useEffect(() => {
+        const ctx = canvasRef.current?.getContext("2d");
+        if (ctx) {
+            // 先清除上一个
+            const ltx1 = shapeLtX * cellSize;
+            const lty1 = (shapeLtY - 1) * cellSize;
+            curShape?.clear(ctx!, ltx1, lty1, cellSize);
+            // 在重新绘制新的图块
+            const ltx = shapeLtX * cellSize;
+            const lty = shapeLtY * cellSize;
+            curShape?.draw(ctx, ltx, lty, cellSize);
+        }
+    }, [curShape, shapeLtX, shapeLtY]);
+
     // 控制下落
     useEffect(() => {
         const intervalId = setInterval(() => {
             if (!suspend) {
-                setShapeLtY(shapeLtY + 1);
-                const ctx = canvasRef.current?.getContext("2d");
-                const ltx = shapeLtX * cellSize;
-                const lty = shapeLtY * cellSize;
-                curShape?.clear(ctx!, ltx, lty, cellSize);
+                setShapeLtY(shapeLtY => shapeLtY + 1); // 这里必须传入一个函数,不能写成setShapeLtY(shapeLtY + 1)。因为会存在闭包的问题。
             }
         }, speed);
         return () => clearInterval(intervalId);
-    }, [shapeLtY, shapeLtX, cellSize, curShape]);
+    }, [speed]);
 
     // 绘制已固定的block
     useEffect(() => {
         const ctx = canvasRef.current?.getContext("2d");
         if (ctx) {
             ctx.clearRect(0, 0, canvasRef.current!.clientWidth, canvasRef.current!.clientHeight);
-            for (let i = 0 ; i < cellStatus.length; i++) {
+            for (let i = 0; i < cellStatus.length; i++) {
                 for (let j = 0; j < cellStatus.length; j++) {
                     if (cellStatus[i][j] === 1) {
                         const ltx = j * cellSize;
@@ -114,31 +156,51 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
             }
         }
     }, []);
-    
+
     useEffect(() => {
         const onKeyPress = (event: KeyboardEvent): void => {
             const ctx = canvasRef.current?.getContext("2d");
             const ltx = shapeLtX * cellSize;
             const lty = shapeLtY * cellSize;
+            let blockValue: number;
+            let conflict: boolean;
             switch (event.key) {
                 case "ArrowLeft":
-                    setShapeLtX(shapeLtX - 1);
-                    curShape?.clear(ctx!, ltx, lty, cellSize);
+                    blockValue = getBlockValueByLt(shapeLtX - 1, shapeLtY);
+                    conflict = isConflict(curShape!.shapeValue, blockValue);
+                    if (!conflict) {
+                        setShapeLtX(shapeLtX - 1);
+                        curShape?.clear(ctx!, ltx, lty, cellSize);
+                    }
                     break;
                 case "ArrowRight":
-                    setShapeLtX(shapeLtX + 1);
-                    curShape?.clear(ctx!, ltx, lty, cellSize);
+                    blockValue = getBlockValueByLt(shapeLtX + 1, shapeLtY);
+                    conflict = isConflict(curShape!.shapeValue, blockValue);
+                    if (!conflict) {
+                        setShapeLtX(shapeLtX + 1);
+                        curShape?.clear(ctx!, ltx, lty, cellSize);
+                    }
                     break;
                 case "ArrowDown":
                     setSuspend(false);
-                    setShapeLtY(shapeLtY + 1);
-                    curShape?.clear(ctx!, ltx, lty, cellSize);
+                    blockValue = getBlockValueByLt(shapeLtX, shapeLtY + 1);
+                    conflict = isConflict(curShape!.shapeValue, blockValue);
+                    if (!conflict) {
+                        setShapeLtY(shapeLtY + 1);
+                        curShape?.clear(ctx!, ltx, lty, cellSize);
+                    } else {
+
+                    }
                     break;
                 case "ArrowUp":
-                    const newShape = new Shape(curShape!.type,  curShape!.color, curShape!.borderColor);
+                    const newShape = new Shape(curShape!.type, curShape!.color, curShape!.borderColor);
                     newShape.shapeIndex = (curShape!.shapeIndex + 1) % 4;
-                    setCurShape(newShape);
-                    curShape?.clear(ctx!, ltx, lty, cellSize);
+                    blockValue = getBlockValueByLt(shapeLtX, shapeLtY);
+                    conflict = isConflict(newShape.shapeValue, blockValue);
+                    if (!conflict) {
+                        setCurShape(newShape);
+                        curShape?.clear(ctx!, ltx, lty, cellSize);
+                    }
                     break;
                 case " ":
                     setSuspend(!suspend);
