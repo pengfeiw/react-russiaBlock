@@ -1,6 +1,6 @@
 import React, {FC, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import "./index.less";
-import Shape, {shapeL, ShapeType} from "./shape";
+import Shape, {ShapeType, shape} from "./shape";
 
 interface RussiaBlockProps {
     canvasSizeW: number; // 画布宽度，高度自动计算
@@ -13,14 +13,14 @@ const isConflict = (blockValue1: number, blockValue2: number): boolean => {
 
 const RussiaBlock: FC<RussiaBlockProps> = (props) => {
     const {canvasSizeW: sizew} = props; // 水平宽度(px)
-    const [cellCountW] = useState<number>(40); // 水平方向的cell数量
-    const [cellCountH] = useState<number>(60); // 竖直方向的cell数量
+    const [cellCountW] = useState<number>(20); // 水平方向的cell数量
+    const [cellCountH] = useState<number>(30); // 竖直方向的cell数量
     const [cellStatus, setCellStatus] = useState<number[][]>([]); // 记录cell的状态
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [curShape, setCurShape] = useState<Shape>(); // 当前block
-    const [shapeLtX, setShapeLtX] = useState<number>(18); // 当前block的位置X
+    const [shapeLtX, setShapeLtX] = useState<number>(9); // 当前block的位置X
     const [shapeLtY, setShapeLtY] = useState<number>(-4); // 当前block的位置Y
-    const [speed, setSpeed] = useState<number>(1000); // 表示多长时间（ms）下落一格
+    const [speed, setSpeed] = useState<number>(500); // 表示多长时间（ms）下落一格
     const [suspend, setSuspend] = useState<boolean>(false); // 暂停
 
     const cellSize = useMemo(() => {
@@ -48,13 +48,36 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
         return parseInt(binaryStr, 2);
     };
 
-    // const updateCellStatusByShapeBlock = () => {
+    const updateCellStatusByShapeBlock = (shapeLtx: number, shapeLtY: number): void => {
+        const newCellStatus: number[][] = JSON.parse(JSON.stringify(cellStatus));
+        let shapeValue = curShape!.shapeValue;
+        for (let i = shapeLtY; i < shapeLtY + 4; i++) {
+            for (let j = shapeLtx; j < shapeLtx + 4; j++) {
+                if (i >= 0 && i < newCellStatus.length && j >= 0 && j < newCellStatus[i].length) {
+                    if (newCellStatus[i][j] === 0) {
+                        newCellStatus[i][j] = (shapeValue & 0x8000) === 0 ? 0 : 1;
+                    }
+                }
+                shapeValue <<= 1;
+            }
+        }
+        setCellStatus(newCellStatus);
+    };
 
-    // };
+    // 随机下落block
+    const randomInitBlock = () => {
+        const shapeTypeKeys = Object.keys(shape);
+        const shapeTypeIndex = Math.round(Math.random() * (shapeTypeKeys.length - 1));
+        const shapeValueIndex = Math.round(Math.random() * 3);
+        const newShape = new Shape(shapeTypeKeys[shapeTypeIndex] as ShapeType);
+        newShape.shapeIndex = shapeValueIndex;
+        setShapeLtX(9);
+        setShapeLtY(-4);
+        setCurShape(newShape);
+    };
 
     useEffect(() => {
-        const shapeBlock = new Shape("shapeI");
-        setCurShape(shapeBlock);
+        randomInitBlock();
     }, []);
 
     // 检测下落冲突，更新cellStatus
@@ -63,9 +86,8 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
             const blockValue = getBlockValueByLt(shapeLtX, shapeLtY);
             const conflict = isConflict(blockValue, curShape!.shapeValue);
             if (conflict) {
-                setShapeLtY(shapeLtY - 1);
-                // 更新cellStatus
-
+                updateCellStatusByShapeBlock(shapeLtX, shapeLtY - 1);
+                randomInitBlock();
             }
         }
     }, [shapeLtY]);
@@ -106,7 +128,7 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
                         const ltx = j * cellSize;
                         const lty = i * cellSize;
                         ctx.strokeStyle = "#2c2c2c";
-                        ctx.fillStyle = "black";
+                        ctx.fillStyle = "#d3d3d3";
                         ctx.strokeRect(ltx, lty, cellSize, cellSize);
                         ctx.fillRect(ltx, lty, cellSize, cellSize);
                     }

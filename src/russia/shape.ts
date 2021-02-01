@@ -6,9 +6,8 @@ export const shapeS = [0x0360, 0x4620, 0x0360, 0x4620];
 export const shapeL = [0x4460, 0x0E80, 0x6220, 0x0170];
 export const shapeJ = [0x2260, 0x08E0, 0x6440, 0x0710];
 export const shapeT = [0x04E0, 0x4640, 0x0720, 0x2620];
-export const allShape = [shapeO, shapeI, shapeZ, shapeS, shapeL, shapeJ, shapeT];
-
-const shape = {shapeO, shapeI, shapeZ, shapeS, shapeL, shapeJ, shapeT};
+// export const allShape = [shapeO, shapeI, shapeZ, shapeS, shapeL, shapeJ, shapeT];
+export const shape = {shapeO, shapeI, shapeZ, shapeS, shapeL, shapeJ, shapeT};
 export type ShapeType = keyof typeof shape;
 class Shape {
     public type: ShapeType;
