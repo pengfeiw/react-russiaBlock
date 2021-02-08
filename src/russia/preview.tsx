@@ -26,7 +26,7 @@ const Preview: FC<PreviewProps> = (props) => {
         if (ctx && shape) {
             ctx.clearRect(0, 0, canvas!.clientWidth, canvas!.clientHeight);
             const cellW = canvas!.width / 4;
-            shape.draw(ctx, 0, 0, cellW);
+            shape.draw(ctx, 1, 1, cellW);
         }
     }, [shape]);
 

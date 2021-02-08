@@ -2,7 +2,7 @@ import React, {FC, useEffect, useMemo, useRef, useState} from "react";
 import Preview from "./preview";
 import "./index.less";
 import Shape, {ShapeType, shape} from "./shape";
-import {Statistic} from "antd";
+import {Statistic, Button} from "antd";
 import {PauseOutlined, ArrowUpOutlined, ArrowDownOutlined, ArrowLeftOutlined, ArrowRightOutlined} from "@ant-design/icons";
 interface RussiaBlockProps {
     canvasSizeW: number; // 画布宽度，高度自动计算
@@ -26,6 +26,8 @@ const getRandomBlock = () => {
     return newShape;
 };
 
+type GameStatus = "UNSTART" | "RUNNING" | "PAUSE" | "END";
+
 const RussiaBlock: FC<RussiaBlockProps> = (props) => {
     const {canvasSizeW: sizew} = props; // 水平宽度(px)
     const [cellCountW] = useState<number>(20); // 水平方向的cell数量
@@ -37,8 +39,11 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
     const [shapeLtX, setShapeLtX] = useState<number>(9); // 当前block的位置X
     const [shapeLtY, setShapeLtY] = useState<number>(-4); // 当前block的位置Y
     const [speed, setSpeed] = useState<number>(500); // 表示多长时间（ms）下落一格
-    const [suspend, setSuspend] = useState<boolean>(false); // 暂停
+    // const [suspend, setSuspend] = useState<boolean>(true); // 暂停
+    // const [isGameRunning, setGameRunning] = useState<boolean>(false); // 正在游戏
+    const [gameStatus, setGameStatus] = useState<GameStatus>("UNSTART"); // 游戏状态
     const [score, setScore] = useState<number>(0); // 分数，一个格子10分
+    const [startButtonVisible, setStartButtonVisible] = useState<boolean>(true);
 
     const cellSize = useMemo(() => {
         return sizew / cellCountW;
@@ -131,12 +136,12 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
     // 控制下落
     useEffect(() => {
         const intervalId = setInterval(() => {
-            if (!suspend) {
+            if (gameStatus === "RUNNING") {
                 setShapeLtY(shapeLtY => shapeLtY + 1); // 这里必须传入一个函数,不能写成setShapeLtY(shapeLtY + 1)。因为会存在闭包的问题。
             }
         }, speed);
         return () => clearInterval(intervalId);
-    }, [speed, suspend]);
+    }, [speed, gameStatus]);
 
     // 绘制已固定的block
     useEffect(() => {
@@ -281,7 +286,7 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
                     }
                     break;
                 case "ArrowDown":
-                    setSuspend(false);
+                    // setSuspend(false);
                     blockValue = getBlockValueByLt(shapeLtX, shapeLtY + 1);
                     conflict = isConflict(curShape!.shapeValue, blockValue);
                     if (!conflict) {
@@ -302,7 +307,10 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
                     }
                     break;
                 case " ":
-                    setSuspend(!suspend);
+                    if (gameStatus === "RUNNING") {
+                        // setSuspend(!suspend);
+                        setGameStatus("PAUSE");
+                    }
                     break;
                 default:
                     break;
@@ -310,19 +318,33 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
         };
         window.addEventListener("keydown", onKeyPress);
         return () => window.removeEventListener("keydown", onKeyPress);
-    }, [canvasRef.current, shapeLtX, shapeLtY, cellSize, suspend, curShape]);
+    }, [canvasRef.current, shapeLtX, shapeLtY, cellSize, gameStatus, curShape]);
+
+    // 开始游戏
+    const startGame = () => {
+        // setGameRunning(true);
+        // setSuspend(false);
+        setGameStatus("RUNNING");
+        setStartButtonVisible(false);
+    };
 
     return (
         <div className="russia">
             <div className="canvasContainer">
                 <canvas className="canvas" ref={canvasRef} />
                 {
-                    suspend ? (
+                    gameStatus === "PAUSE" ? (
                         <div className="pause" style={{left: sizew * 0.45, top: sizew * 0.5}}>
                             <PauseOutlined />
                             暂停
                         </div>
                     ) : <></>
+                }
+                {
+                    startButtonVisible ? <Button className="start" style={{left: sizew * 0.45, top: sizew * 0.5}} onClick={startGame}>开始游戏</Button> : <></>
+                }
+                {
+                    
                 }
             </div>
             <div className="sider">
