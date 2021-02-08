@@ -46,7 +46,10 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
 
     // 获取一个blockValue
     const getBlockValueByLt = (ltX: number, ltY: number) => {
-        if (ltX < -3 || ltX > cellCountW - 1 || ltY < -3 || ltY > cellCountH - 1) {
+        if (ltY < -3) {
+            return 0x0000;
+        }
+        if (ltX < -3 || ltX > cellCountW - 1 || ltY > cellCountH - 1) {
             return 0xFFFF;
         }
         let binaryStr = "";
