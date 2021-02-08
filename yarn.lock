@@ -16,6 +16,13 @@
   dependencies:
     tinycolor2 "^1.4.1"
 
+"@ant-design/colors@^5.0.0":
+  version "5.0.1"
+  resolved "http://nexus3.luban.fit/repository/npm/@ant-design/colors/-/colors-5.0.1.tgz#09670f2f44a7473d7bc01be901c48ec10f12c7a4"
+  integrity sha1-CWcPL0SnRz17wBvpAcSOwQ8Sx6Q=
+  dependencies:
+    "@ctrl/tinycolor" "^3.3.1"
+
 "@ant-design/css-animation@^1.7.2":
   version "1.7.3"
   resolved "https://registry.npm.taobao.org/@ant-design/css-animation/download/@ant-design/css-animation-1.7.3.tgz#60a1c970014e86b28f940510d69e503e428f1136"
@@ -34,6 +41,18 @@
     "@ant-design/colors" "^3.1.0"
     "@ant-design/icons-svg" "^4.0.0"
     "@babel/runtime" "^7.10.4"
+    classnames "^2.2.6"
+    insert-css "^2.0.0"
+    rc-util "^5.0.1"
+
+"@ant-design/icons@^4.4.0":
+  version "4.4.0"
+  resolved "http://nexus3.luban.fit/repository/npm/@ant-design/icons/-/icons-4.4.0.tgz#d4e4ba5910454e1d3f67a802d2aad9ee75a51dea"
+  integrity sha1-1OS6WRBFTh0/Z6gC0qrZ7nWlHeo=
+  dependencies:
+    "@ant-design/colors" "^5.0.0"
+    "@ant-design/icons-svg" "^4.0.0"
+    "@babel/runtime" "^7.11.2"
     classnames "^2.2.6"
     insert-css "^2.0.0"
     rc-util "^5.0.1"
@@ -1208,6 +1227,11 @@
   version "10.1.0"
   resolved "https://registry.npm.taobao.org/@csstools/normalize.css/download/@csstools/normalize.css-10.1.0.tgz#f0950bba18819512d42f7197e56c518aa491cf18"
   integrity sha1-8JULuhiBlRLUL3GX5WxRiqSRzxg=
+
+"@ctrl/tinycolor@^3.3.1":
+  version "3.3.4"
+  resolved "http://nexus3.luban.fit/repository/npm/@ctrl/tinycolor/-/tinycolor-3.3.4.tgz#59691edd031eedc431bda1bdf601257c06289a40"
+  integrity sha1-WWke3QMe7cQxvaG99gElfAYomkA=
 
 "@eslint/eslintrc@^0.2.1":
   version "0.2.1"
@@ -6936,6 +6960,7 @@ jest-snapshot@^26.6.0, jest-snapshot@^26.6.1:
     "@babel/types" "^7.0.0"
     "@jest/types" "^26.6.1"
     "@types/babel__traverse" "^7.0.4"
+    "@types/prettier" "^2.0.0"
     chalk "^4.0.0"
     expect "^26.6.1"
     graceful-fs "^4.2.4"

@@ -1,5 +1,55 @@
 .russia {
-    .canvas {
-        border: 1px solid #2c2c2c;
+    position: relative;
+    display: flex;
+    .canvasContainer {
+        display: inline-block;
+        .canvas {
+            border: 1px solid #2c2c2c;
+            height: 90vh;
+            width: 54vh;
+        }
+        .pause {
+            position: absolute;
+            font-size: 25px;
+            color: #2c2c2c;
+            opacity: 0.8;
+        }
+    }
+    .sider {
+        display: inline-block;
+        margin-left: 15px;
+        font-size: 20px;
+        .preview {
+            border: 1px solid #2c2c2c;
+            width: 150px;
+            height: 150px;
+        }
+        .score,.operator {
+            margin-top: 10px;
+        }
+        .score {
+            .ant-statistic-title {
+                font-size: 30px;
+            }
+            .ant-statistic-content-value-int {
+                color: lightseagreen;
+                margin-left: 5px;
+            }
+        }
+        .operator {
+            .title {
+                font-size: 30px;
+                color: rgba(0, 0, 0, 0.45);
+            }
+            .operatorItem {
+                margin: 5px;
+                .operatorItem-explain {
+                    margin-left: 10px;
+                }
+                .operatorItem-key {
+                    color: lightseagreen;
+                }
+            }
+        }
     }
 }

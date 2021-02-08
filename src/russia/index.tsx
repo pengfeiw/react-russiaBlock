@@ -1,7 +1,8 @@
 import React, {FC, useEffect, useMemo, useRef, useState} from "react";
 import "./index.less";
 import Shape, {ShapeType, shape} from "./shape";
-
+import {Statistic} from "antd";
+import {PauseOutlined, ArrowUpOutlined, ArrowDownOutlined, ArrowLeftOutlined, ArrowRightOutlined} from "@ant-design/icons";
 interface RussiaBlockProps {
     canvasSizeW: number; // 画布宽度，高度自动计算
 }
@@ -11,6 +12,16 @@ const isConflict = (blockValue1: number, blockValue2: number): boolean => {
     return (blockValue1 & blockValue2) !== 0;
 };
 
+// 随机下落block
+const getRandomBlock = () => {
+    const shapeTypeKeys = Object.keys(shape);
+    const shapeTypeIndex = Math.round(Math.random() * (shapeTypeKeys.length - 1));
+    const shapeValueIndex = Math.round(Math.random() * 3);
+    const newShape = new Shape(shapeTypeKeys[shapeTypeIndex] as ShapeType);
+    newShape.shapeIndex = shapeValueIndex;
+    return newShape;
+};
+
 const RussiaBlock: FC<RussiaBlockProps> = (props) => {
     const {canvasSizeW: sizew} = props; // 水平宽度(px)
     const [cellCountW] = useState<number>(20); // 水平方向的cell数量
@@ -18,10 +29,12 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
     const [cellStatus, setCellStatus] = useState<number[][]>([]); // 记录cell的状态
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [curShape, setCurShape] = useState<Shape>(); // 当前block
+    const [nextShape, setNextShape] = useState<Shape>(); // 下一个block
     const [shapeLtX, setShapeLtX] = useState<number>(9); // 当前block的位置X
     const [shapeLtY, setShapeLtY] = useState<number>(-4); // 当前block的位置Y
     const [speed, setSpeed] = useState<number>(500); // 表示多长时间（ms）下落一格
     const [suspend, setSuspend] = useState<boolean>(false); // 暂停
+    const [score, setScore] = useState<number>(0); // 分数，一个格子10分
 
     const cellSize = useMemo(() => {
         return sizew / cellCountW;
@@ -64,20 +77,13 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
         setCellStatus(newCellStatus);
     };
 
-    // 随机下落block
-    const randomInitBlock = () => {
-        const shapeTypeKeys = Object.keys(shape);
-        const shapeTypeIndex = Math.round(Math.random() * (shapeTypeKeys.length - 1));
-        const shapeValueIndex = Math.round(Math.random() * 3);
-        const newShape = new Shape(shapeTypeKeys[shapeTypeIndex] as ShapeType);
-        newShape.shapeIndex = shapeValueIndex;
+    useEffect(() => {
+        const block1 = getRandomBlock();
+        const block2 = getRandomBlock();
+        setCurShape(block1);
+        setNextShape(block2);
         setShapeLtX(9);
         setShapeLtY(-4);
-        setCurShape(newShape);
-    };
-
-    useEffect(() => {
-        randomInitBlock();
     }, []);
 
     // 检测下落冲突，更新cellStatus
@@ -87,7 +93,10 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
             const conflict = isConflict(blockValue, curShape!.shapeValue);
             if (conflict) {
                 updateCellStatusByShapeBlock(shapeLtX, shapeLtY - 1);
-                randomInitBlock();
+                setCurShape(nextShape);
+                setShapeLtX(9);
+                setShapeLtY(-4);
+                setNextShape(getRandomBlock());
             }
         }
     }, [shapeLtY]);
@@ -139,6 +148,62 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
                     }
                 }
             }
+        }
+    }, [cellStatus]);
+
+    // 检测消除的row,加分
+    useEffect(() => {
+        const eliminateRowIndex: number[] = [];
+        for (let i = 0; i < cellStatus.length; i++) {
+            const curRow = cellStatus[i];
+            const isEliminate = curRow.every((item) => item === 1);
+            if (isEliminate) {
+                eliminateRowIndex.push(i);
+            }
+        }
+
+        if (eliminateRowIndex.length > 0) {
+            // 闪烁效果
+            const ctx = canvasRef.current?.getContext("2d");
+            let isDraw = false;
+            const interval = setInterval(() => {
+                if (isDraw) {
+                    for (let i = 0; i < eliminateRowIndex.length; i++) {
+                        const rowIndex = eliminateRowIndex[i];
+                        const curRow = cellStatus[rowIndex];
+                        for (let j = 0; j < curRow.length; j++) {
+                            const ltx = j * cellSize;
+                            const lty = rowIndex * cellSize;
+                            ctx!.strokeStyle = "#2c2c2c";
+                            ctx!.fillStyle = "#d3d3d3";
+                            ctx!.strokeRect(ltx, lty, cellSize, cellSize);
+                            ctx!.fillRect(ltx, lty, cellSize, cellSize);
+                        }
+                    }
+                } else {
+                    for (let i = 0; i < eliminateRowIndex.length; i++) {
+                        const rowIndex = eliminateRowIndex[i];
+                        const ltx = 0;
+                        const lty = rowIndex * cellSize;
+                        ctx?.clearRect(ltx - 1, lty - 1, sizew + 2, cellSize + 2);
+                    }
+                }
+                isDraw = !isDraw;
+            }, 200)
+            setTimeout(() => {
+                clearInterval(interval);
+                // 加分，更新cellStatus
+                setScore(score + 5 * cellCountW * eliminateRowIndex.length);
+                const newCellStatus: number[][] = JSON.parse(JSON.stringify(cellStatus));
+                for (let i = eliminateRowIndex.length - 1; i >= 0; i--) {
+                    const delRowIndex = eliminateRowIndex[i];
+                    newCellStatus.splice(delRowIndex, 1);
+                }
+                for (let i = 0; i < eliminateRowIndex.length; i++) {
+                    newCellStatus.unshift(new Array(cellCountW).fill(0));
+                }
+                setCellStatus(newCellStatus);
+            }, 1000);
         }
     }, [cellStatus]);
 
@@ -242,7 +307,48 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
 
     return (
         <div className="russia">
-            <canvas className="canvas" ref={canvasRef} />
+            <div className="canvasContainer">
+                <canvas className="canvas" ref={canvasRef} />
+                {
+                    suspend ? (
+                        <div className="pause" style={{left: sizew * 0.45, top: sizew * 0.5}}>
+                            <PauseOutlined />
+                            暂停
+                        </div>
+                    ) : <></>
+                }
+            </div>
+            <div className="sider">
+                <div className="preview">
+                    <canvas />
+                </div>
+                <div className="score">
+                    <Statistic title="score" value={score} />
+                </div>
+                <div className="operator">
+                    <span className="title">操作指示</span>
+                    <div className="operatorItem">
+                        <ArrowUpOutlined className="operatorItem-key" />
+                        <span className="operatorItem-explain">旋转</span>
+                    </div>
+                    <div className="operatorItem">
+                        <ArrowLeftOutlined className="operatorItem-key" />
+                        <span className="operatorItem-explain">左移</span>
+                    </div>
+                    <div className="operatorItem">
+                        <ArrowRightOutlined className="operatorItem-key" />
+                        <span className="operatorItem-explain">右移</span>
+                    </div>
+                    <div className="operatorItem">
+                        <ArrowDownOutlined className="operatorItem-key" />
+                        <span className="operatorItem-explain">加速</span>
+                    </div>
+                    <div className="operatorItem">
+                        <span className="operatorItem-key">SPACE</span>
+                        <span className="operatorItem-explain">暂停</span>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };
