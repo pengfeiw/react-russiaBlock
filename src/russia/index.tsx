@@ -1,4 +1,4 @@
-import React, {FC, useCallback, useEffect, useMemo, useRef, useState} from "react";
+import React, {FC, useEffect, useMemo, useRef, useState} from "react";
 import "./index.less";
 import Shape, {ShapeType, shape} from "./shape";
 
@@ -100,6 +100,11 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
             const ltx1 = shapeLtX * cellSize;
             const lty1 = (shapeLtY - 1) * cellSize;
             curShape?.clear(ctx!, ltx1, lty1, cellSize);
+        }
+    }, [curShape, shapeLtY]);
+    useEffect(() => {
+        const ctx = canvasRef.current?.getContext("2d");
+        if (ctx) {
             // 在重新绘制新的图块
             const ltx = shapeLtX * cellSize;
             const lty = shapeLtY * cellSize;
@@ -115,7 +120,7 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
             }
         }, speed);
         return () => clearInterval(intervalId);
-    }, [speed]);
+    }, [speed, suspend]);
 
     // 绘制已固定的block
     useEffect(() => {
