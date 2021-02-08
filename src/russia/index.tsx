@@ -1,4 +1,5 @@
 import React, {FC, useEffect, useMemo, useRef, useState} from "react";
+import Preview from "./preview";
 import "./index.less";
 import Shape, {ShapeType, shape} from "./shape";
 import {Statistic} from "antd";
@@ -14,11 +15,14 @@ const isConflict = (blockValue1: number, blockValue2: number): boolean => {
 
 // 随机下落block
 const getRandomBlock = () => {
+    const colors = ["#FFA488", "#66FF66", "#00FFFF", "#FF00FF", "#CCBBFF", "#FF3333"];
+    const colorKey = Math.round(Math.random() * (colors.length - 1)); 
     const shapeTypeKeys = Object.keys(shape);
     const shapeTypeIndex = Math.round(Math.random() * (shapeTypeKeys.length - 1));
     const shapeValueIndex = Math.round(Math.random() * 3);
     const newShape = new Shape(shapeTypeKeys[shapeTypeIndex] as ShapeType);
     newShape.shapeIndex = shapeValueIndex;
+    newShape.color = colors[colorKey];
     return newShape;
 };
 
@@ -78,12 +82,11 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
     };
 
     useEffect(() => {
-        const block1 = getRandomBlock();
-        const block2 = getRandomBlock();
-        setCurShape(block1);
-        setNextShape(block2);
+        const block = getRandomBlock();
+        setCurShape(block);
         setShapeLtX(9);
         setShapeLtY(-4);
+        setNextShape(getRandomBlock());
     }, []);
 
     // 检测下落冲突，更新cellStatus
@@ -101,16 +104,17 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
         }
     }, [shapeLtY]);
 
-    // 绘制shape
+    // 清除
     useEffect(() => {
         const ctx = canvasRef.current?.getContext("2d");
         if (ctx) {
-            // 先清除上一个
+            // 清除上一个
             const ltx1 = shapeLtX * cellSize;
             const lty1 = (shapeLtY - 1) * cellSize;
             curShape?.clear(ctx!, ltx1, lty1, cellSize);
         }
     }, [curShape, shapeLtY]);
+    // 重新绘制
     useEffect(() => {
         const ctx = canvasRef.current?.getContext("2d");
         if (ctx) {
@@ -320,7 +324,7 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
             </div>
             <div className="sider">
                 <div className="preview">
-                    <canvas />
+                    <Preview shape={nextShape} />
                 </div>
                 <div className="score">
                     <Statistic title="score" value={score} />
