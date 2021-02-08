@@ -16,7 +16,7 @@ const isConflict = (blockValue1: number, blockValue2: number): boolean => {
 // 随机下落block
 const getRandomBlock = () => {
     const colors = ["#FFA488", "#66FF66", "#00FFFF", "#FF00FF", "#CCBBFF", "#FF3333"];
-    const colorKey = Math.round(Math.random() * (colors.length - 1)); 
+    const colorKey = Math.round(Math.random() * (colors.length - 1));
     const shapeTypeKeys = Object.keys(shape);
     const shapeTypeIndex = Math.round(Math.random() * (shapeTypeKeys.length - 1));
     const shapeValueIndex = Math.round(Math.random() * 3);
@@ -39,11 +39,8 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
     const [shapeLtX, setShapeLtX] = useState<number>(9); // 当前block的位置X
     const [shapeLtY, setShapeLtY] = useState<number>(-4); // 当前block的位置Y
     const [speed, setSpeed] = useState<number>(500); // 表示多长时间（ms）下落一格
-    // const [suspend, setSuspend] = useState<boolean>(true); // 暂停
-    // const [isGameRunning, setGameRunning] = useState<boolean>(false); // 正在游戏
     const [gameStatus, setGameStatus] = useState<GameStatus>("UNSTART"); // 游戏状态
     const [score, setScore] = useState<number>(0); // 分数，一个格子10分
-    const [startButtonVisible, setStartButtonVisible] = useState<boolean>(true);
 
     const cellSize = useMemo(() => {
         return sizew / cellCountW;
@@ -103,11 +100,16 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
             const blockValue = getBlockValueByLt(shapeLtX, shapeLtY);
             const conflict = isConflict(blockValue, curShape!.shapeValue);
             if (conflict) {
-                updateCellStatusByShapeBlock(shapeLtX, shapeLtY - 1);
-                setCurShape(nextShape);
-                setShapeLtX(9);
-                setShapeLtY(-4);
-                setNextShape(getRandomBlock());
+                if (shapeLtY >= 0) {
+                    updateCellStatusByShapeBlock(shapeLtX, shapeLtY - 1);
+                    setCurShape(nextShape);
+                    setShapeLtX(9);
+                    setShapeLtY(-4);
+                    setNextShape(getRandomBlock());
+                } else {
+                    // game over
+                    setGameStatus("END");
+                }
             }
         }
     }, [shapeLtY]);
@@ -220,16 +222,18 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
     }, [cellStatus]);
 
     useEffect(() => {
-        const status: number[][] = [];
-        for (let i = 0; i < cellCountH; i++) {
-            const curRowStatus: number[] = [];
-            for (let j = 0; j < cellCountW; j++) {
-                curRowStatus.push(0);
+        if (gameStatus === "UNSTART") {
+            const status: number[][] = [];
+            for (let i = 0; i < cellCountH; i++) {
+                const curRowStatus: number[] = [];
+                for (let j = 0; j < cellCountW; j++) {
+                    curRowStatus.push(0);
+                }
+                status.push(curRowStatus);
             }
-            status.push(curRowStatus);
+            setCellStatus(status);
         }
-        setCellStatus(status);
-    }, []);
+    }, [gameStatus]);
 
     // 设置canvas尺寸
     useEffect(() => {
@@ -322,10 +326,11 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
 
     // 开始游戏
     const startGame = () => {
-        // setGameRunning(true);
-        // setSuspend(false);
         setGameStatus("RUNNING");
-        setStartButtonVisible(false);
+    };
+    const restartGame = () => {
+        setGameStatus("UNSTART");
+        setScore(0);
     };
 
     return (
@@ -341,10 +346,15 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
                     ) : <></>
                 }
                 {
-                    startButtonVisible ? <Button className="start" style={{left: sizew * 0.45, top: sizew * 0.5}} onClick={startGame}>开始游戏</Button> : <></>
+                    gameStatus === "UNSTART" ? <Button className="start" style={{left: sizew * 0.45, top: sizew * 0.5}} onClick={startGame}>开始游戏</Button> : <></>
                 }
                 {
-                    
+                    gameStatus === "END" ? (
+                        <div className="end" style={{left: sizew * 0.42, top: sizew * 0.5}}>
+                            游戏结束
+                            <Button onClick={restartGame}>重新开始</Button>
+                        </div>
+                    ) : <></>
                 }
             </div>
             <div className="sider">
