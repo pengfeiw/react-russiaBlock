@@ -40,8 +40,8 @@ class Shape {
                 const row = parseInt((i / 4).toString());
                 const col = i % 4;
                 ctx.beginPath();
-                ctx.strokeRect(ltx + col * cellW, lty + row * cellW, cellW, cellW);
-                ctx.fillRect(ltx + col * cellW, lty + row * cellW, cellW, cellW);
+                ctx.strokeRect(ltx + col * cellW + 1, lty + row * cellW + 1, cellW - 2, cellW - 2);
+                ctx.fillRect(ltx + col * cellW + 1, lty + row * cellW + 1, cellW - 2, cellW - 2);
                 ctx.closePath();
             }
             value = value << 1;
@@ -62,7 +62,7 @@ class Shape {
             if (andOpRes === 0x8000) {
                 const row = parseInt((i / 4).toString());
                 const col = i % 4;
-                ctx.clearRect(ltx + col * cellW - 1, lty + row * cellW - 1, cellW + 2, cellW + 2);
+                ctx.clearRect(ltx + col * cellW, lty + row * cellW, cellW, cellW);
             }
             value = value << 1;
         }

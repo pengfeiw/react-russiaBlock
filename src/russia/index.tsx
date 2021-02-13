@@ -38,9 +38,19 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
     const [nextShape, setNextShape] = useState<Shape>(); // 下一个block
     const [shapeLtX, setShapeLtX] = useState<number>(9); // 当前block的位置X
     const [shapeLtY, setShapeLtY] = useState<number>(-4); // 当前block的位置Y
+    const preShapeLtxRef = useRef<number>(9); // block上一个位置的X
+    const preShapeLtyRef = useRef<number>(-4); // block上一个位置的Y
     const [speed, setSpeed] = useState<number>(500); // 表示多长时间（ms）下落一格
     const [gameStatus, setGameStatus] = useState<GameStatus>("UNSTART"); // 游戏状态
     const [score, setScore] = useState<number>(0); // 分数，一个格子10分
+
+    useEffect(() => {
+        preShapeLtxRef.current = shapeLtX;
+        preShapeLtyRef.current = shapeLtY;
+    });
+
+    const preLtx = preShapeLtxRef.current;
+    const preLty = preShapeLtyRef.current;
 
     const cellSize = useMemo(() => {
         return sizew / cellCountW;
@@ -86,6 +96,7 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
         setCellStatus(newCellStatus);
     };
 
+    // 设置下一个block
     useEffect(() => {
         const block = getRandomBlock();
         setCurShape(block);
@@ -101,6 +112,7 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
             const conflict = isConflict(blockValue, curShape!.shapeValue);
             if (conflict) {
                 if (shapeLtY >= 0) {
+                    // 更新cellStatus
                     updateCellStatusByShapeBlock(shapeLtX, shapeLtY - 1);
                     setCurShape(nextShape);
                     setShapeLtX(9);
@@ -118,20 +130,24 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
     useEffect(() => {
         const ctx = canvasRef.current?.getContext("2d");
         if (ctx) {
-            // 清除上一个
-            const ltx1 = shapeLtX * cellSize;
-            const lty1 = (shapeLtY - 1) * cellSize;
-            curShape?.clear(ctx!, ltx1, lty1, cellSize);
+            const ltx = preLtx * cellSize;
+            const lty = preLty * cellSize;
+            curShape?.clear(ctx!, ltx, lty, cellSize);
         }
-    }, [curShape, shapeLtY]);
+    }, [curShape, shapeLtY, shapeLtX]);
+
     // 重新绘制
     useEffect(() => {
         const ctx = canvasRef.current?.getContext("2d");
-        if (ctx) {
+        if (ctx && curShape) {
             // 在重新绘制新的图块
             const ltx = shapeLtX * cellSize;
             const lty = shapeLtY * cellSize;
-            curShape?.draw(ctx, ltx, lty, cellSize);
+            const blockValue = getBlockValueByLt(shapeLtX, shapeLtY);
+            const conflict = isConflict(curShape!.shapeValue, blockValue);
+            if (!conflict) {
+                curShape?.draw(ctx, ltx, lty, cellSize);
+            }
         }
     }, [curShape, shapeLtX, shapeLtY]);
 
@@ -145,11 +161,21 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
         return () => clearInterval(intervalId);
     }, [speed, gameStatus]);
 
+    // 设置速度
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+            if (gameStatus === "RUNNING" && speed >= 80) {
+                setSpeed(speed - 1);
+            }
+        }, 1000);
+        return () => clearInterval(intervalId);
+    }, [gameStatus, speed]);
+
     // 绘制已固定的block
     useEffect(() => {
         const ctx = canvasRef.current?.getContext("2d");
         if (ctx) {
-            ctx.clearRect(0, 0, canvasRef.current!.clientWidth, canvasRef.current!.clientHeight);
+            ctx.clearRect(-1, -1, canvasRef.current!.clientWidth + 2, canvasRef.current!.clientHeight + 2);
             for (let i = 0; i < cellStatus.length; i++) {
                 for (let j = 0; j < cellStatus.length; j++) {
                     if (cellStatus[i][j] === 1) {
@@ -158,7 +184,7 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
                         ctx.strokeStyle = "#2c2c2c";
                         ctx.fillStyle = "#d3d3d3";
                         ctx.strokeRect(ltx, lty, cellSize, cellSize);
-                        ctx.fillRect(ltx, lty, cellSize, cellSize);
+                        ctx.fillRect(ltx + 1, lty + 1, cellSize - 2, cellSize - 2);
                     }
                 }
             }
@@ -191,7 +217,7 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
                             ctx!.strokeStyle = "#2c2c2c";
                             ctx!.fillStyle = "#d3d3d3";
                             ctx!.strokeRect(ltx, lty, cellSize, cellSize);
-                            ctx!.fillRect(ltx, lty, cellSize, cellSize);
+                            ctx!.fillRect(ltx + 1, lty + 1, cellSize - 2, cellSize - 2);
                         }
                     }
                 } else {
@@ -265,6 +291,7 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
         }
     }, []);
 
+    // 监听键盘事件
     useEffect(() => {
         const onKeyPress = (event: KeyboardEvent): void => {
             const ctx = canvasRef.current?.getContext("2d");
@@ -278,7 +305,6 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
                     conflict = isConflict(curShape!.shapeValue, blockValue);
                     if (!conflict) {
                         setShapeLtX(shapeLtX - 1);
-                        curShape?.clear(ctx!, ltx, lty, cellSize);
                     }
                     break;
                 case "ArrowRight":
@@ -286,19 +312,10 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
                     conflict = isConflict(curShape!.shapeValue, blockValue);
                     if (!conflict) {
                         setShapeLtX(shapeLtX + 1);
-                        curShape?.clear(ctx!, ltx, lty, cellSize);
                     }
                     break;
                 case "ArrowDown":
-                    // setSuspend(false);
-                    blockValue = getBlockValueByLt(shapeLtX, shapeLtY + 1);
-                    conflict = isConflict(curShape!.shapeValue, blockValue);
-                    if (!conflict) {
-                        setShapeLtY(shapeLtY + 1);
-                        curShape?.clear(ctx!, ltx, lty, cellSize);
-                    } else {
-
-                    }
+                    setShapeLtY(shapeLtY + 1);
                     break;
                 case "ArrowUp":
                     const newShape = new Shape(curShape!.type, curShape!.color, curShape!.borderColor);
@@ -312,8 +329,9 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
                     break;
                 case " ":
                     if (gameStatus === "RUNNING") {
-                        // setSuspend(!suspend);
                         setGameStatus("PAUSE");
+                    } else if (gameStatus === "PAUSE") {
+                        setGameStatus("RUNNING");
                     }
                     break;
                 default:
@@ -331,6 +349,7 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
     const restartGame = () => {
         setGameStatus("UNSTART");
         setScore(0);
+        setSpeed(500);
     };
 
     return (
