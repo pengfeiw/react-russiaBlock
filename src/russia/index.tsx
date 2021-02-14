@@ -294,6 +294,9 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
     // 监听键盘事件
     useEffect(() => {
         const onKeyPress = (event: KeyboardEvent): void => {
+            if (gameStatus === "END") {
+                return;
+            }
             const ctx = canvasRef.current?.getContext("2d");
             const ltx = shapeLtX * cellSize;
             const lty = shapeLtY * cellSize;
@@ -371,7 +374,7 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
                     gameStatus === "END" ? (
                         <div className="end" style={{left: sizew * 0.42, top: sizew * 0.5}}>
                             游戏结束
-                            <Button onClick={restartGame}>重新开始</Button>
+                            <Button className="restartButton" onClick={restartGame}>重新开始</Button>
                         </div>
                     ) : <></>
                 }
