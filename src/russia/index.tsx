@@ -26,7 +26,7 @@ const getRandomBlock = () => {
     return newShape;
 };
 
-type GameStatus = "UNSTART" | "RUNNING" | "PAUSE" | "END";
+type GameStatus = "UNSTART" | "RUNNING" | "PAUSE" | "END"; // 游戏状态
 
 const RussiaBlock: FC<RussiaBlockProps> = (props) => {
     const {canvasSizeW: sizew} = props; // 水平宽度(px)
@@ -38,8 +38,8 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
     const [nextShape, setNextShape] = useState<Shape>(); // 下一个block
     const [shapeLtX, setShapeLtX] = useState<number>(9); // 当前block的位置X
     const [shapeLtY, setShapeLtY] = useState<number>(-4); // 当前block的位置Y
-    const preShapeLtxRef = useRef<number>(9); // block上一个位置的X
-    const preShapeLtyRef = useRef<number>(-4); // block上一个位置的Y
+    const preShapeLtxRef = useRef<number>(9); // 用于记录block上一个位置的X
+    const preShapeLtyRef = useRef<number>(-4); // 用于记录block上一个位置的Y
     const [speed, setSpeed] = useState<number>(500); // 表示多长时间（ms）下落一格
     const [gameStatus, setGameStatus] = useState<GameStatus>("UNSTART"); // 游戏状态
     const [score, setScore] = useState<number>(0); // 分数，一个格子10分
@@ -132,7 +132,7 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
         if (ctx) {
             const ltx = preLtx * cellSize;
             const lty = preLty * cellSize;
-            curShape?.clear(ctx!, ltx, lty, cellSize);
+            curShape?.clear(ctx, ltx, lty, cellSize);
         }
     }, [curShape, shapeLtY, shapeLtX]);
 
@@ -164,7 +164,7 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
     // 设置速度
     useEffect(() => {
         const intervalId = setInterval(() => {
-            if (gameStatus === "RUNNING" && speed >= 80) {
+            if (gameStatus === "RUNNING" && speed >= 100) {
                 setSpeed(speed - 1);
             }
         }, 1000);
@@ -175,7 +175,7 @@ const RussiaBlock: FC<RussiaBlockProps> = (props) => {
     useEffect(() => {
         const ctx = canvasRef.current?.getContext("2d");
         if (ctx) {
-            ctx.clearRect(-1, -1, canvasRef.current!.clientWidth + 2, canvasRef.current!.clientHeight + 2);
+            ctx.clearRect(-1, -1, canvasRef.current!.width + 2, canvasRef.current!.height + 2);
             for (let i = 0; i < cellStatus.length; i++) {
                 for (let j = 0; j < cellStatus.length; j++) {
                     if (cellStatus[i][j] === 1) {
